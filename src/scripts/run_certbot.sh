@@ -37,7 +37,7 @@ fi
 
 # We require an email to be able to request a certificate.
 if [ -z "${certbot_email}" ]; then
-    error "CERTBOT_EMAIL environment variable undefined; certbot will do nothing!"
+    error "certbot.email or CERTBOT_EMAIL environment variable must be set; without it certbot will do nothing!"
     exit 1
 fi
 
@@ -132,10 +132,10 @@ get_certificate() {
 
 # Get all the cert names for which we should create certificate requests and
 # have them signed, along with the corresponding server names.
-# If we have a config file we request certificates based on the specifications
-# within that file otherwise we parse the nginx config files to automatically
+# If we have a config file with the 'certificates' key we request certificates based on the
+# specifications within that file otherwise we parse the nginx config files to automatically
 # discover certificate names, key types, authenticators, and domains.
-if [ -f "${CONFIG_FILE}" ]; then
+if [ -f "${CONFIG_FILE}" ] && shyaml -q get-value certificates < "${CONFIG_FILE}"; then
     debug "Using config file '${CONFIG_FILE}' for certificate specifications"
     # Loop over the certificates array and request the certificates
     while read -r -d '' cert; do
@@ -158,7 +158,7 @@ if [ -f "${CONFIG_FILE}" ]; then
             error "'domains' are missing; ignoring this certificate specification"
             continue
         fi
-        debug "Certificate domains are is: ${domains[*]}"
+        debug "Certificate domains are: ${domains[*]}"
         domain_request=""
         for domain in "${domains[@]}"; do
             domain_request+=" --domain ${domain}"

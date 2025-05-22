@@ -14,6 +14,7 @@ create_dhparam() {
     # Read dhparam-size from config file, falling back to DHPARAM_SIZE environment variable.
     local CONFIG_FILE="${NGINX_CERTBOT_CONFIG_FILE:-/etc/nginx-certbot/config.yml}"
     if [ -f "${CONFIG_FILE}" ]; then
+        local YAML_DHPARAM_SIZE
         YAML_DHPARAM_SIZE=$(shyaml get-value nginx-certbot.dhparam-size '' < "${CONFIG_FILE}")
         if [ -n "${YAML_DHPARAM_SIZE}" ]; then
             DHPARAM_SIZE=${YAML_DHPARAM_SIZE}
