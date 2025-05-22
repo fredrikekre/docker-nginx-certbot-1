@@ -21,6 +21,39 @@ trap "clean_exit" EXIT
 # Source "util.sh" so we can have our nice tools.
 . "$(cd "$(dirname "$0")"; pwd)/util.sh"
 
+# Configuration file
+if [ -n "${NGINX_CERTBOT_CONFIG_FILE}" ] && [ ! -f "${NGINX_CERTBOT_CONFIG_FILE}" ]; then
+    # If the variable is set but the file doesn't exist we error out since this
+    # is most likely a user error.
+    error "NGINX_CERTBOT_CONFIG_FILE is configured but '${NGINX_CERTBOT_CONFIG_FILE}' does not exist, exiting"
+    exit 1
+fi
+export CONFIG_FILE="${NGINX_CERTBOT_CONFIG_FILE:-/etc/nginx-certbot/config.yml}"
+
+# If the config file exist we extract configuration from it and override any corresponding environment variables:
+#   - nginx-certbot.debug overrides DEBUG
+#   - nginx-certbot.dhparam-size overrides DHPARAM_SIZE
+#   - nginx-certbot.renewal-interval overrides RENEWAL_INTERVAL
+if [ -f "${CONFIG_FILE}" ]; then
+    debug "Configuration file '${CONFIG_FILE}' exist."
+    YAML_DEBUG=$(shyaml get-value nginx-certbot.debug '' < "${CONFIG_FILE}")
+    if [ "${YAML_DEBUG}" == "True" ] || [ "${YAML_DEBUG}" == "1" ]; then
+        export DEBUG=1
+    elif [ "${YAML_DEBUG}" == "False" ] || [ "${YAML_DEBUG}" == "0" ]; then
+        export DEBUG=0
+    fi
+    YAML_DHPARAM_SIZE=$(shyaml get-value nginx-certbot.dhparam-size '' < "${CONFIG_FILE}")
+    if [ -n "${YAML_DHPARAM_SIZE}" ]; then
+        export DHPARAM_SIZE=${YAML_DHPARAM_SIZE}
+    fi
+    YAML_RENEWAL_INTERVAL=$(shyaml get-value nginx-certbot.renewal-interval '' < "${CONFIG_FILE}")
+    if [ -n "${YAML_RENEWAL_INTERVAL}" ]; then
+        export RENEWAL_INTERVAL=${YAML_RENEWAL_INTERVAL}
+    fi
+else
+    debug "Configuration file '${CONFIG_FILE}' doesn't exist. Falling back to environment variables and default values."
+fi
+
 # If the environment variable `DEBUG=1` is set, then this message is printed.
 debug "Debug messages are enabled"
 

@@ -8,16 +8,15 @@ info "Starting certificate renewal process"
 
 # If we have a config file we parse it and let definitions within take
 # precedence over any environment variables.
-config_file="${NGINX_CERTBOT_CONFIG_FILE:-/etc/nginx-certbot/config.yml}"
-if [ -f "${config_file}" ]; then
-    certbot_authenticator="$(shyaml get-value certbot.authenticator '' < "${config_file}")"
-    certbot_elliptic_curve="$(shyaml get-value certbot.elliptic-curve '' < "${config_file}")"
-    certbot_email="$(shyaml get-value certbot.email '' < "${config_file}")"
-    certbot_key_type="$(shyaml get-value certbot.key-type '' < "${config_file}")"
-    certbot_rsa_key_size="$(shyaml get-value certbot.rsa-key-size '' < "${config_file}")"
-    certbot_staging="$(shyaml get-value certbot.staging '' < "${config_file}")"
-    certbot_production_url="$(shyaml get-value certbot.production_url '' < "${config_file}")"
-    certbot_staging_url="$(shyaml get-value certbot.staging_url '' < "${config_file}")"
+if [ -f "${CONFIG_FILE}" ]; then
+    certbot_authenticator="$(shyaml get-value certbot.authenticator '' < "${CONFIG_FILE}")"
+    certbot_elliptic_curve="$(shyaml get-value certbot.elliptic-curve '' < "${CONFIG_FILE}")"
+    certbot_email="$(shyaml get-value certbot.email '' < "${CONFIG_FILE}")"
+    certbot_key_type="$(shyaml get-value certbot.key-type '' < "${CONFIG_FILE}")"
+    certbot_rsa_key_size="$(shyaml get-value certbot.rsa-key-size '' < "${CONFIG_FILE}")"
+    certbot_staging="$(shyaml get-value certbot.staging '' < "${CONFIG_FILE}")"
+    certbot_production_url="$(shyaml get-value certbot.production_url '' < "${CONFIG_FILE}")"
+    certbot_staging_url="$(shyaml get-value certbot.staging_url '' < "${CONFIG_FILE}")"
 fi
 
 # Environment variable fallbacks
@@ -135,19 +134,19 @@ get_certificate() {
 # If we have a config file we request certificates based on the specifications
 # within that file otherwise we parse the nginx config files to automatically
 # discover certificate names, key types, authenticators, and domains.
-if [ -f "${config_file}" ]; then
-    debug "Using config file '${config_file}' for certificate specifications"
+if [ -f "${CONFIG_FILE}" ]; then
+    debug "Using config file '${CONFIG_FILE}' for certificate specifications"
     # Loop over the certificates array and request the certificates
     while read -r -d '' cert; do
         debug "Parsing certificate specification"
 
-        # cert-name (required)
-        cert_name="$(shyaml get-value cert-name '' <<<"${cert}")"
+        # name (required)
+        cert_name="$(shyaml get-value name '' <<<"${cert}")"
         if [ -z "${cert_name}" ]; then
-            error "'cert-name' is missing; ignoring this certificate specification"
+            error "'name' is missing; ignoring this certificate specification"
             continue
         fi
-        debug "Certificate cert-name is: ${cert_name}"
+        debug "Certificate name is: ${cert_name}"
 
         # domains (required)
         domains=()
@@ -190,7 +189,7 @@ if [ -f "${config_file}" ]; then
         if ! get_certificate "${cert_name}" "${domain_request}" "${key_type}" "${authenticator}" "${rsa_key_size}" "${elliptic_curve}" "${credentials}"; then
             error "Certbot failed for '${cert_name}'. Check the logs for details."
         fi
-    done < <(shyaml -y get-values-0 certificates '' < ${config_file})
+    done < <(shyaml -y get-values-0 certificates '' < "${CONFIG_FILE}")
 else
     debug "Using automatic discovery of nginx conf file for certificate specifications"
     # This will return an associative array that looks something like this:
