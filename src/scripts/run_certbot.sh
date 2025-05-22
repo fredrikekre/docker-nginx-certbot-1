@@ -49,10 +49,10 @@ done
 
 # Use the correct challenge URL depending on if we want staging or not.
 if [ "${certbot_staging}" = "1" ]; then
-    debug "Using staging environment"
+    debug "Using staging environment (${certbot_staging_url})"
     letsencrypt_url="${certbot_staging_url}"
 else
-    debug "Using production environment"
+    debug "Using production environment (${certbot_production_url})"
     letsencrypt_url="${certbot_production_url}"
 fi
 
