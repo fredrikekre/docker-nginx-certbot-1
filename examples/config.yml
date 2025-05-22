@@ -6,9 +6,6 @@ nginx-certbot:
   # Certificate renewal interval. Falls back to the RENEWAL_INTERVAL environment variable
   # or, if that is unset, to '8d'.
   renewal-interval: 8d
-  # Boolean to enable nginx debug mode and more verbose logging output. Falls back to the
-  # DEBUG environment variable or, if that is unset, to 'false'.
-  debug: false
 
 # Certbot parameters.
 certbot:

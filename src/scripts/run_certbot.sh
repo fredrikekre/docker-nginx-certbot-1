@@ -8,6 +8,7 @@ info "Starting certificate renewal process"
 
 # If we have a config file we parse it and let definitions within take
 # precedence over any environment variables.
+CONFIG_FILE="${NGINX_CERTBOT_CONFIG_FILE:-/etc/nginx-certbot/config.yml}"
 if [ -f "${CONFIG_FILE}" ]; then
     certbot_authenticator="$(shyaml get-value certbot.authenticator '' < "${CONFIG_FILE}")"
     certbot_elliptic_curve="$(shyaml get-value certbot.elliptic-curve '' < "${CONFIG_FILE}")"

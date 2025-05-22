@@ -11,6 +11,15 @@ set -e
 # The created file should be stored somewhere under /etc/letsencrypt/dhparams/
 # to ensure persistence between restarts.
 create_dhparam() {
+    # Read dhparam-size from config file, falling back to DHPARAM_SIZE environment variable.
+    local CONFIG_FILE="${NGINX_CERTBOT_CONFIG_FILE:-/etc/nginx-certbot/config.yml}"
+    if [ -f "${CONFIG_FILE}" ]; then
+        YAML_DHPARAM_SIZE=$(shyaml get-value nginx-certbot.dhparam-size '' < "${CONFIG_FILE}")
+        if [ -n "${YAML_DHPARAM_SIZE}" ]; then
+            DHPARAM_SIZE=${YAML_DHPARAM_SIZE}
+            debug "Using nginx-certbot.dhparam-size=${DHPARAM_SIZE} from config file."
+        fi
+    fi
     if [ -z "${DHPARAM_SIZE}" ]; then
         debug "DHPARAM_SIZE unset, using default of 2048 bits"
         DHPARAM_SIZE=2048
