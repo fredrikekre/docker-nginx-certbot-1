@@ -263,7 +263,6 @@ if [ -f "${CONFIG_FILE}" ] && shyaml -q get-value certificates < "${CONFIG_FILE}
             continue
         fi
         debug "Certificate domains are is: ${domains[*]}"
-
         # Assemble the list of domains to be included in the request.
         read -ra alt_names < <(assemble_alt_names "${domains[@]}")
         # Hand over all the info required for the certificate request, and
@@ -280,10 +279,9 @@ else
     for conf_file in /etc/nginx/conf.d/*.conf*; do
         parse_config_file "${conf_file}" certificates
     done
-
     # Iterate over each key and create a signed certificate for them.
     for cert_name in "${!certificates[@]}"; do
-        server_names=("${certificates["$cert_name"]}")
+        server_names=(${certificates["$cert_name"]})
         # Assemble the list of domains to be included in the request.
         read -ra alt_names < <(assemble_alt_names "${server_names[@]}")
         # Hand over all the info required for the certificate request, and
