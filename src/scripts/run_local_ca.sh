@@ -238,7 +238,7 @@ assemble_alt_names() {
 
 # Get all the cert names for which we should create certificates for, along
 # with the corresponding server names.
-if [ -f "${CONFIG_FILE}" ] && shyaml -q get-value certificates < "${CONFIG_FILE}"; then
+if [ -f "${CONFIG_FILE}" ] && shyaml -q get-value certificates >/dev/null <"${CONFIG_FILE}"; then
     debug "Using config file '${CONFIG_FILE}' for certificate specifications"
     # Loop over the certificates array and request the certificates
     while read -r -d '' cert; do
@@ -265,7 +265,7 @@ if [ -f "${CONFIG_FILE}" ] && shyaml -q get-value certificates < "${CONFIG_FILE}
         if ! get_certificate "${cert_name}" "${alt_names[@]}"; then
             error "Local CA failed for '${cert_name}'. Check the logs for details."
         fi
-    done < <(shyaml -y get-values-0 certificates '' < "${CONFIG_FILE}")
+    done < <(shyaml -y get-values-0 certificates '' <"${CONFIG_FILE}")
 else
     debug "Using automatic discovery of nginx conf file for certificate specifications"
     # This will return an associative array that looks something like this:

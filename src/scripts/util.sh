@@ -13,31 +13,31 @@ log() {
     echo "$(date "${DATE_FORMAT_STRING}") [${1}] ${2}"
 }
 
-# Helper function to output debug messages to STDOUT if the `DEBUG` environment
+# Helper function to output debug messages to STDERR if the `DEBUG` environment
 # variable is set to 1.
 #
 # $1: String to be printed.
 debug() {
     if [ 1 = "${DEBUG}" ]; then
-        log "debug" "${1}"
+        (log "debug" "${1}") >&2
     fi
 }
 
-# Helper function to output informational messages to STDOUT.
+# Helper function to output informational messages to STDERR.
 #
 # $1: String to be printed.
 info() {
-    log "info" "${1}"
+    (log "info" "${1}") >&2
 }
 
-# Helper function to output warning messages to STDOUT, with bold yellow text.
+# Helper function to output warning messages to STDERR, with bold yellow text.
 #
 # $1: String to be printed.
 warning() {
     (set +x; tput -Tscreen bold
     tput -Tscreen setaf 3
     log "warning" "${1}"
-    tput -Tscreen sgr0)
+    tput -Tscreen sgr0) >&2
 }
 
 # Helper function to output error messages to STDERR, with bold red text.
@@ -323,7 +323,7 @@ get_config () {
     local msg="Looking up config for ${setting_name}:"
     # First look in the config file...
     if [ -f "${CONFIG_FILE}" ]; then
-        value="$(shyaml get-value "${yml_key}" '' < "${CONFIG_FILE}")"
+        value="$(shyaml get-value "${yml_key}" '' <"${CONFIG_FILE}")"
         if [ -n "${value}" ]; then
             debug "${msg} using ${yml_key}=${value} from config file."
         fi
