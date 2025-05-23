@@ -17,18 +17,13 @@ LOCAL_CA_CRT_DIR="${LOCAL_CA_DIR}/new_certs"
 info "Starting certificate renewal process with local CA"
 
 # Load some configuration from file with environment variables as fallback
-CONFIG_FILE="${NGINX_CERTBOT_CONFIG_FILE:-/etc/nginx-certbot/config.yml}"
-if [ -f "${CONFIG_FILE}" ]; then
-    certbot_email="$(shyaml get-value certbot.email '' < "${CONFIG_FILE}")"
-    certbot_rsa_key_size="$(shyaml get-value certbot.rsa-key-size '' < "${CONFIG_FILE}")"
-fi
-: "${certbot_email:=${CERTBOT_EMAIL}}"
-: "${certbot_rsa_key_size:=${RSA_KEY_SIZE:-2048}}"
+certbot_email=$(get_config certbot.email CERTBOT_EMAIL '' "certbot email")
+certbot_rsa_key_size=$(get_config certbot.rsa-key-size RSA_KEY_SIZE 2048 "RSA key size")
 
 # We require an email to be set here as well, in order to simulate how it would
 # be in the real certbot case.
 if [ -z "${certbot_email}" ]; then
-    error "certbot.email or CERTBOT_EMAIL environment variable must be set; without it certbot will do nothing!"
+    error "certbot.email or the CERTBOT_EMAIL environment variable must be set; without it certbot will do nothing!"
     exit 1
 fi
 
@@ -253,7 +248,7 @@ if [ -f "${CONFIG_FILE}" ] && shyaml -q get-value certificates < "${CONFIG_FILE}
             error "'name' is missing; ignoring this certificate specification"
             continue
         fi
-        debug "Certificate name is: ${cert_name}"
+        debug " - certificate name is: ${cert_name}"
         domains=()
         while read -r -d '' domain; do
             domains+=("${domain}")
@@ -262,7 +257,7 @@ if [ -f "${CONFIG_FILE}" ] && shyaml -q get-value certificates < "${CONFIG_FILE}
             error "'domains' are missing; ignoring this certificate specification"
             continue
         fi
-        debug "Certificate domains are is: ${domains[*]}"
+        debug " - certificate domains are: ${domains[*]}"
         # Assemble the list of domains to be included in the request.
         read -ra alt_names < <(assemble_alt_names "${domains[@]}")
         # Hand over all the info required for the certificate request, and

@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Configuration file with default location
+CONFIG_FILE="${NGINX_CERTBOT_CONFIG_FILE:-/etc/nginx-certbot/config.yml}"
+
 : ${DATE_FORMAT_STRING:="+%Y/%m/%d %T"}
 
 # Helper function used to output messages in a uniform manner.
@@ -303,4 +306,39 @@ auto_enable_configs() {
             fi
         fi
     done
+}
+
+# Helper function to lookup configuration from the YAML config file and environment variables.
+#
+# $1: YAML key
+# $2: Environment variable
+# $3: Default value
+# $4: Setting name (for pretty debug printing)
+get_config () {
+    local yml_key=${1}
+    local env_var=${2}
+    local default=${3}
+    local setting_name=${4}
+    local value=""
+    local msg="Looking up config for ${setting_name}:"
+    # First look in the config file...
+    if [ -f "${CONFIG_FILE}" ]; then
+        value="$(shyaml get-value "${yml_key}" '' < "${CONFIG_FILE}")"
+        if [ -n "${value}" ]; then
+            debug "${msg} using ${yml_key}=${value} from config file."
+        fi
+    fi
+    # ...then fall back to the environment variable...
+    if [ -z "${value}" ] && [ -n "${env_var}" ] && [ -n "${!env_var}" ]; then
+        value="${!env_var}"
+        if [ -n "${value}" ]; then
+            debug "${msg} using ${env_var}=${value} from environment"
+        fi
+    fi
+    # ...and finally to the default value.
+    if [ -z "${value}" ]; then
+        value="${default}"
+        debug "${msg} using default value (${value})."
+    fi
+    echo -n "${value}"
 }

@@ -6,47 +6,27 @@ set -e
 
 info "Starting certificate renewal process"
 
-# If we have a config file we parse it and let definitions within take
-# precedence over any environment variables.
-CONFIG_FILE="${NGINX_CERTBOT_CONFIG_FILE:-/etc/nginx-certbot/config.yml}"
-if [ -f "${CONFIG_FILE}" ]; then
-    certbot_authenticator="$(shyaml get-value certbot.authenticator '' < "${CONFIG_FILE}")"
-    certbot_elliptic_curve="$(shyaml get-value certbot.elliptic-curve '' < "${CONFIG_FILE}")"
-    certbot_email="$(shyaml get-value certbot.email '' < "${CONFIG_FILE}")"
-    certbot_key_type="$(shyaml get-value certbot.key-type '' < "${CONFIG_FILE}")"
-    certbot_rsa_key_size="$(shyaml get-value certbot.rsa-key-size '' < "${CONFIG_FILE}")"
-    certbot_staging="$(shyaml get-value certbot.staging '' < "${CONFIG_FILE}")"
-    certbot_production_url="$(shyaml get-value certbot.production_url '' < "${CONFIG_FILE}")"
-    certbot_staging_url="$(shyaml get-value certbot.staging_url '' < "${CONFIG_FILE}")"
-fi
-
-# Environment variable fallbacks
-: "${certbot_authenticator:=${CERTBOT_AUTHENTICATOR:-webroot}}"
-: "${certbot_elliptic_curve:=${ELLIPTIC_CURVE:-secp256r1}}"
-: "${certbot_email:=${CERTBOT_EMAIL}}"
-: "${certbot_key_type:=$( [[ ${USE_ECDSA} == "0" ]] && echo "rsa" || echo "ecdsa")}"
-: "${certbot_rsa_key_size:=${RSA_KEY_SIZE:-2048}}"
-: "${certbot_staging:=${STAGING}}"
+# Load the configuration
+certbot_email=$(get_config certbot.email CERTBOT_EMAIL '' "certbot email")
+certbot_authenticator=$(get_config certbot.authenticator CERTBOT_AUTHENTICATOR webroot "default certbot authenticator")
+# certbot_credentials=$(get_config certbot.credentials CERTBOT_CREDENTIALS '' "default certbot credentials")
+certbot_elliptic_curve=$(get_config certbot.elliptic-curve ELLIPTIC_CURVE secp256r1 "certbot elliptic curve")
+certbot_key_type=$(get_config certbot.key-type '' "$( [ "${USE_ECDSA}" == "0" ] && echo "rsa" || echo "ecdsa")" "default certbot key type")
+certbot_rsa_key_size=$(get_config certbot.rsa-key-size RSA_KEY_SIZE 2048 "default certbot RSA key size")
+certbot_staging=$(get_config certbot.staging STAGING 0 "certbot staging")
 
 # URLs used when requesting certificates.
 # These are picked up from the environment if they are set, which enables
 # advanced usage of custom ACME servers, else it will use the default Let's
 # Encrypt servers defined here.
-: "${certbot_production_url:=${CERTBOT_PRODUCTION_URL:-https://acme-v02.api.letsencrypt.org/directory}}"
-: "${certbot_staging_url:=${CERTBOT_STAGING_URL:-https://acme-staging-v02.api.letsencrypt.org/directory}}"
+certbot_production_url=$(get_config certbot.production-url CERTBOT_PRODUCTION_URL "https://acme-v02.api.letsencrypt.org/directory" "certbot production URL")
+certbot_staging_url=$(get_config certbot.staging-url CERTBOT_STAGING_URL "https://acme-staging-v02.api.letsencrypt.org/directory" "certbot staging URL")
 
 # We require an email to be able to request a certificate.
 if [ -z "${certbot_email}" ]; then
-    error "certbot.email or CERTBOT_EMAIL environment variable must be set; without it certbot will do nothing!"
+    error "certbot.email or the CERTBOT_EMAIL environment variable must be set; without it certbot will do nothing!"
     exit 1
 fi
-
-# Log the global defaults we have resolved so far
-debug "Configuration resolved from config file and environment variables:"
-for var in certbot_authenticator certbot_elliptic_curve certbot_email certbot_key_type \
-    certbot_rsa_key_size certbot_staging certbot_production_url certbot_staging_url; do
-    debug "  - ${var}=${!var}"
-done
 
 # Use the correct challenge URL depending on if we want staging or not.
 if [ "${certbot_staging}" = "1" ]; then
@@ -147,7 +127,7 @@ if [ -f "${CONFIG_FILE}" ] && shyaml -q get-value certificates < "${CONFIG_FILE}
             error "'name' is missing; ignoring this certificate specification"
             continue
         fi
-        debug "Certificate name is: ${cert_name}"
+        debug " - certificate name is: ${cert_name}"
 
         # domains (required)
         domains=()
@@ -158,32 +138,31 @@ if [ -f "${CONFIG_FILE}" ] && shyaml -q get-value certificates < "${CONFIG_FILE}
             error "'domains' are missing; ignoring this certificate specification"
             continue
         fi
-        debug "Certificate domains are: ${domains[*]}"
+        debug " - certificate domains are: ${domains[*]}"
         domain_request=""
         for domain in "${domains[@]}"; do
             domain_request+=" --domain ${domain}"
         done
-        debug "Certificate domain request is: ${domain_request}"
 
         # key-type (optional)
         key_type=$(shyaml get-value key-type "${certbot_key_type}" <<<"${cert}")
-        debug "Certificate key-type is: ${key_type}"
+        debug " - certificate key-type is: ${key_type}"
 
         # authenticator (optional)
         authenticator=$(shyaml get-value authenticator "${certbot_authenticator}" <<<"${cert}")
-        debug "Certificate authenticator is: ${authenticator}"
+        debug " - certificate authenticator is: ${authenticator}"
 
         # credentials (optional)
         credentials=$(shyaml get-value credentials '' <<<"${cert}")
-        debug "Certificate authenticator credentials is: ${credentials}"
+        debug " - certificate authenticator credential file is: ${credentials}"
 
         # rsa-key-size (optional)
         rsa_key_size=$(shyaml get-value rsa-key-size "${certbot_rsa_key_size}" <<<"${cert}")
-        debug "Certificate RSA key size is: ${rsa_key_size}"
+        debug " - certificate RSA key size is: ${rsa_key_size}"
 
         # elliptic-curve (optional)
         elliptic_curve=$(shyaml get-value elliptic-curve "${certbot_elliptic_curve}" <<<"${cert}")
-        debug "Certificate elliptic curve is: ${elliptic_curve}"
+        debug " - certificate elliptic curve is: ${elliptic_curve}"
 
         # Hand over all the info required for the certificate request, and
         # let certbot decide if it is necessary to update the certificate.

@@ -24,10 +24,9 @@ trap "clean_exit" EXIT
 # Configuration file from NGINX_CERTBOT_CONFIG_FILE environment variable. We make some noise
 # here during startup if the variable is set to a file that doesn't exist since this is most
 # likely a user error.
-CONFIG_FILE="${NGINX_CERTBOT_CONFIG_FILE:-/etc/nginx-certbot/config.yml}"
 if [ ! -f "${CONFIG_FILE}" ]; then
     if [ -n "${NGINX_CERTBOT_CONFIG_FILE}" ]; then
-        warning "NGINX_CERTBOT_CONFIG_FILE is configured but '${CONFIG_FILE}' does not exist."
+        warning "NGINX_CERTBOT_CONFIG_FILE is explicitly set but '${CONFIG_FILE}' doesn't exist."
     else
         debug "Configuration file '${CONFIG_FILE}' doesn't exist."
     fi
@@ -57,19 +56,7 @@ fi
 debug "PID of the main Nginx process: ${NGINX_PID}"
 
 # Make sure a renewal interval is set before continuing.
-# If we have a config file with 'nginx-certbot.renewal-interval' set we let that override
-# the RENEWAL_INTERVAL environment variable
-if [ -f "${CONFIG_FILE}" ]; then
-    YAML_RENEWAL_INTERVAL=$(shyaml get-value nginx-certbot.renewal-interval '' < "${CONFIG_FILE}")
-    if [ -n "${YAML_RENEWAL_INTERVAL}" ]; then
-        RENEWAL_INTERVAL=${YAML_RENEWAL_INTERVAL}
-        debug "Using nginx-certbot.renewal-interval=${RENEWAL_INTERVAL} from config file."
-    fi
-fi
-if [ -z "${RENEWAL_INTERVAL}" ]; then
-    debug "RENEWAL_INTERVAL unset, using default of '8d'"
-    RENEWAL_INTERVAL='8d'
-fi
+RENEWAL_INTERVAL=$(get_config nginx-certbot.renewal-interval RENEWAL_INTERVAL 8d "renewal interval")
 
 # Instead of trying to run 'cron' or something like that, just sleep and
 # call on certbot after the defined interval.
