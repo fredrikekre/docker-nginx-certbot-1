@@ -38,8 +38,7 @@ certbot:
 # A minimum requirement for each certificate is to specifiy 'name' and 'domains'.
 certificates:
     # Certificate name (see certbots --cert-name flag). Generated certificates will be
-    # placed in the /etc/letsencrypt/live/<certificate name>/ folder. This is a required
-    # parameter.
+    # placed in the /etc/letsencrypt/live/<name>/ folder. This is a required parameter.
   - name: example-com
     # Required list of domains for which the certificate should be valid for (see certbots
     # --domain flag). This is a required parameter.
